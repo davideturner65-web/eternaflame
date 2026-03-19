@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import DiscoverCard from "@/components/ui/DiscoverCard";
 import ProfileCard from "@/components/ui/ProfileCard";
-import { Profile } from "@/lib/types";
+import { Profile, ProfileLocation, ProfileMilitary } from "@/types/profile";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -12,16 +12,13 @@ export const metadata: Metadata = {
   description: "Explore the permanent record. Meet someone you've never known.",
 };
 
-export const revalidate = 60;
-
-async function getRandomProfile(): Promise<Profile | null> {
+async function getRandomProfile(): Promise<{ profile: Profile; location: ProfileLocation | null; military: ProfileMilitary | null } | null> {
   try {
     const supabase = createClient();
     const { count } = await supabase
       .from("profiles")
       .select("*", { count: "exact", head: true })
-      .eq("privacy", "public")
-      .eq("profile_status", "published");
+      .eq("privacy", "public");
 
     if (!count) return null;
 
@@ -30,11 +27,17 @@ async function getRandomProfile(): Promise<Profile | null> {
       .from("profiles")
       .select("*")
       .eq("privacy", "public")
-      .eq("profile_status", "published")
       .range(offset, offset)
       .single();
 
-    return data ?? null;
+    if (!data) return null;
+
+    const [{ data: locationData }, { data: militaryData }] = await Promise.all([
+      supabase.from("profile_locations").select("*").eq("profile_id", data.id).limit(1).maybeSingle(),
+      supabase.from("profile_military").select("*").eq("profile_id", data.id).limit(1).maybeSingle(),
+    ]);
+
+    return { profile: data, location: locationData ?? null, military: militaryData ?? null };
   } catch {
     return null;
   }
@@ -47,20 +50,16 @@ async function getBrowseData(): Promise<{
 }> {
   try {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("residence, military_branch, interests")
-      .eq("privacy", "public")
-      .eq("profile_status", "published");
+    const [{ data: locData }, { data: milData }, { data: profileData }] = await Promise.all([
+      supabase.from("profile_locations").select("city").not("city", "is", null).limit(200),
+      supabase.from("profile_military").select("branch").not("branch", "is", null).limit(200),
+      supabase.from("profiles").select("interests").eq("privacy", "public").not("interests", "is", null).limit(200),
+    ]);
 
-    if (!data) return { locations: [], militaryBranches: [], interests: [] };
-
-    const locations = Array.from(new Set(data.map((p) => p.residence).filter(Boolean))) as string[];
-    const militaryBranches = Array.from(
-      new Set(data.map((p) => p.military_branch).filter(Boolean))
-    ) as string[];
-    const allInterests = data.flatMap((p) => p.interests ?? []);
-    const interests = Array.from(new Set(allInterests)).slice(0, 20);
+    const locations = Array.from(new Set((locData ?? []).map((l: { city: string }) => l.city).filter(Boolean))).slice(0, 20) as string[];
+    const militaryBranches = Array.from(new Set((milData ?? []).map((m: { branch: string }) => m.branch).filter(Boolean))) as string[];
+    const allInterests = (profileData ?? []).flatMap((p: { interests: string[] | null }) => p.interests ?? []);
+    const interests = Array.from(new Set(allInterests)).slice(0, 20) as string[];
 
     return { locations, militaryBranches, interests };
   } catch {
@@ -68,25 +67,84 @@ async function getBrowseData(): Promise<{
   }
 }
 
-async function getFilteredProfiles(filter: string, value: string): Promise<Profile[]> {
+async function getFilteredProfiles(filter: string, value: string): Promise<{ profile: Profile; location: ProfileLocation | null }[]> {
   try {
     const supabase = createClient();
-    let query = supabase
-      .from("profiles")
-      .select("*")
-      .eq("privacy", "public")
-      .eq("profile_status", "published");
 
     if (filter === "location") {
-      query = query.eq("residence", value);
-    } else if (filter === "military") {
-      query = query.eq("military_branch", value);
-    } else if (filter === "interest") {
-      query = query.contains("interests", [value]);
+      const { data: locationRows } = await supabase
+        .from("profile_locations")
+        .select("profile_id, city, state_abbreviation")
+        .eq("city", value)
+        .limit(20);
+
+      if (!locationRows?.length) return [];
+
+      const profileIds = locationRows.map((l: { profile_id: string }) => l.profile_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("privacy", "public")
+        .in("id", profileIds);
+
+      return (profiles ?? []).map((p: Profile) => ({
+        profile: p,
+        location: locationRows.find((l: { profile_id: string; city?: string; state_abbreviation?: string }) => l.profile_id === p.id) as ProfileLocation | null,
+      }));
     }
 
-    const { data } = await query.limit(20);
-    return data ?? [];
+    if (filter === "military") {
+      const { data: milRows } = await supabase
+        .from("profile_military")
+        .select("profile_id")
+        .eq("branch", value)
+        .limit(20);
+
+      if (!milRows?.length) return [];
+
+      const profileIds = milRows.map((m: { profile_id: string }) => m.profile_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("privacy", "public")
+        .in("id", profileIds);
+
+      const locMap = new Map<string, ProfileLocation>();
+      if (profiles?.length) {
+        const { data: locs } = await supabase
+          .from("profile_locations")
+          .select("*")
+          .in("profile_id", profileIds)
+          .limit(50);
+        (locs ?? []).forEach((l: ProfileLocation) => { if (!locMap.has(l.profile_id)) locMap.set(l.profile_id, l); });
+      }
+
+      return (profiles ?? []).map((p: Profile) => ({ profile: p, location: locMap.get(p.id) ?? null }));
+    }
+
+    if (filter === "interest") {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("privacy", "public")
+        .contains("interests", [value])
+        .limit(20);
+
+      if (!profiles?.length) return [];
+
+      const profileIds = profiles.map((p: Profile) => p.id);
+      const locMap = new Map<string, ProfileLocation>();
+      const { data: locs } = await supabase
+        .from("profile_locations")
+        .select("*")
+        .in("profile_id", profileIds)
+        .limit(50);
+      (locs ?? []).forEach((l: ProfileLocation) => { if (!locMap.has(l.profile_id)) locMap.set(l.profile_id, l); });
+
+      return profiles.map((p: Profile) => ({ profile: p, location: locMap.get(p.id) ?? null }));
+    }
+
+    return [];
   } catch {
     return [];
   }
@@ -100,7 +158,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
   const activeFilter = searchParams.filter ?? "";
   const activeValue = searchParams.value ?? "";
 
-  const [featuredProfile, browseData] = await Promise.all([
+  const [featured, browseData] = await Promise.all([
     getRandomProfile(),
     getBrowseData(),
   ]);
@@ -124,9 +182,13 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
       </div>
 
       {/* Featured random profile */}
-      {featuredProfile ? (
+      {featured ? (
         <>
-          <DiscoverCard profile={featuredProfile} />
+          <DiscoverCard
+            profile={featured.profile}
+            location={featured.location}
+            military={featured.military}
+          />
           <div className="mt-5">
             <Link
               href="/discover"
@@ -234,8 +296,8 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
             )}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProfiles.map((profile) => (
-              <ProfileCard key={profile.id} profile={profile} size="md" />
+            {filteredProfiles.map(({ profile, location }) => (
+              <ProfileCard key={profile.id} profile={profile} location={location} size="md" />
             ))}
           </div>
         </div>
