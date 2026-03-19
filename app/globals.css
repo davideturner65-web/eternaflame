@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #1C1917;
+  --foreground: #E7E0D5;
+  --gold: #C4A869;
+  --gold-dark: #A8884A;
+  --stone-400: #A8A29E;
+  --stone-500: #78716C;
+}
+
+body {
+  background-color: #1C1917;
+  color: #E7E0D5;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .font-playfair {
+    font-family: "Playfair Display", Georgia, serif;
+  }
+
+  .gold-gradient {
+    background: linear-gradient(135deg, #C4A869 0%, #A8884A 100%);
+  }
+
+  .gold-border {
+    border-color: rgba(196, 164, 105, 0.25);
+  }
+
+  .card-surface {
+    background: rgba(196, 164, 105, 0.05);
+    border: 1px solid rgba(196, 164, 105, 0.15);
+  }
+
+  .small-caps {
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+}
