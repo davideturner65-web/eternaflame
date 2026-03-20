@@ -26,7 +26,6 @@ export default function Globe({
   height = 400,
   showCounter = false,
   totalCount,
-  showLabels: _showLabels = false,
 }: GlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
