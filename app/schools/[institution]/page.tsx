@@ -25,7 +25,7 @@ async function getSchoolData(institutionSlug: string) {
     if (!eduData?.length) return null;
 
     const institutionName = eduData[0].institution_name;
-    const profileIds = [...new Set(eduData.map(e => e.profile_id))].slice(0, 24);
+    const profileIds = Array.from(new Set(eduData.map(e => e.profile_id))).slice(0, 24);
 
     const { data: profiles } = await supabase
       .from("profiles")
@@ -35,7 +35,7 @@ async function getSchoolData(institutionSlug: string) {
 
     return {
       institutionName,
-      profiles: (profiles ?? []) as Profile[],
+      profiles: (profiles ?? []) as unknown as Profile[],
       total: count ?? 0,
     };
   } catch { return null; }

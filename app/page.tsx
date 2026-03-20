@@ -25,7 +25,7 @@ async function getRecentProfiles(): Promise<Profile[]> {
       .eq("privacy", "public")
       .order("created_at", { ascending: false })
       .limit(6);
-    return (data ?? []) as Profile[];
+    return (data ?? []) as unknown as Profile[];
   } catch { return []; }
 }
 

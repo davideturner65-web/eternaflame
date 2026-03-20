@@ -25,7 +25,7 @@ async function getStateData(stateName: string) {
 
     if (!locData?.length) return null;
 
-    const profileIds = [...new Set(locData.map(l => l.profile_id))].slice(0, 24);
+    const profileIds = Array.from(new Set(locData.map(l => l.profile_id))).slice(0, 24);
 
     const { data: profiles } = await supabase
       .from("profiles")
@@ -43,7 +43,7 @@ async function getStateData(stateName: string) {
       .slice(0, 12);
 
     return {
-      profiles: (profiles ?? []) as Profile[],
+      profiles: (profiles ?? []) as unknown as Profile[],
       total: count ?? 0,
       topCounties,
     };

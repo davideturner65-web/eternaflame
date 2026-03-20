@@ -32,7 +32,7 @@ export default async function ProfileRedirectPage({ params }: Props) {
       .order("is_current", { ascending: false })
       .limit(1);
 
-    slugPath = generateProfileSlug(profile as Profile, locs?.[0] as ProfileLocation | null);
+    slugPath = generateProfileSlug(profile as unknown as Profile, locs?.[0] as ProfileLocation | null);
   }
 
   redirect(`/${slugPath}`, 301 as never);

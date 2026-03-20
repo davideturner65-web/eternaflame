@@ -47,14 +47,14 @@ async function getData(conflictName: string, stateName: string) {
 
     if (!locData?.length) return { profiles: [], total: 0 };
 
-    const profileIds = [...new Set(locData.map(l => l.profile_id))].slice(0, 24);
+    const profileIds = Array.from(new Set(locData.map(l => l.profile_id))).slice(0, 24);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, slug, first_name, last_name, birth_year, death_year, personality_summary, interests, privacy")
       .in("id", profileIds)
       .eq("privacy", "public");
 
-    return { profiles: (profiles ?? []) as Profile[], total: count ?? 0 };
+    return { profiles: (profiles ?? []) as unknown as Profile[], total: count ?? 0 };
   } catch { return { profiles: [], total: 0 }; }
 }
 

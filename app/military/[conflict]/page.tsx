@@ -52,7 +52,7 @@ async function getConflictData(conflictName: string) {
       .in("id", profileIds)
       .eq("privacy", "public");
 
-    return { profiles: (profiles ?? []) as Profile[], total: count ?? 0 };
+    return { profiles: (profiles ?? []) as unknown as Profile[], total: count ?? 0 };
   } catch { return { profiles: [], total: 0 }; }
 }
 
