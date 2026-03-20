@@ -8,8 +8,9 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Discover Lives",
-  description: "Explore the permanent record. Meet someone you've never known.",
+  title: "Discover a Life You've Never Known | Eternaflame",
+  description: "Meet a stranger whose life is now part of the permanent record. Every person here was real, lived fully, and deserves to be remembered.",
+  alternates: { canonical: "https://eternaflame.org/discover" },
 };
 
 async function getRandomProfile(): Promise<{ profile: Profile; location: ProfileLocation | null; military: ProfileMilitary | null } | null> {

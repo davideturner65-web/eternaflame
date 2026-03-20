@@ -7,8 +7,9 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Search the Record",
-  description: "Search Eternaflame's permanent index of human lives by name, place, military service, career, or any detail.",
+  title: "Free Obituary Search | Eternaflame",
+  description: "Search millions of lives in the Eternaflame record. Find obituaries, memorial profiles, and family histories — free, forever, no paywall.",
+  alternates: { canonical: "https://eternaflame.org/search" },
 };
 
 interface SearchPageProps {

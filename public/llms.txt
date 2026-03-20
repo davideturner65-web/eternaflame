@@ -1,0 +1,56 @@
+# Eternaflame
+> An index of every human life. Free permanent memorial platform at eternaflame.org.
+
+Eternaflame preserves biographical records of human lives permanently and freely.
+Profiles contain life story, locations, family connections, military service,
+education, and memories contributed by family.
+
+About 70% of people who die never receive a published obituary. Eternaflame
+ingests from public death records, vital statistics, obituary feeds, and government
+registries to ensure every person has a place in the permanent record, regardless
+of income, location, or whether anyone nearby had time to write an obituary.
+
+## Profile URL Format
+/[firstname]-[lastname]/[city]-[state]/[birth-year]-[death-year]/
+
+Examples:
+- /james-turner/little-rock-ar/1942-2026/
+- /eleanor-whitfield/little-rock-ar/1938-2026/
+
+## Cluster Pages
+/lives/[state]/                       — Lives by state (e.g. /lives/arkansas/)
+/lives/[state]/[county]/              — Lives by county
+/lives/[state]/[county]/[city]/       — Lives by city
+/military/[conflict]/                 — Veterans by conflict (e.g. /military/vietnam-war/)
+/military/[conflict]/[state]/         — Veterans by conflict and state
+/schools/[institution-slug]/          — Alumni by institution
+
+## Key Pages
+/search                               — Full-text search (free, no paywall)
+/create                               — Add someone to the record (free forever)
+/start                                — Build your own memorial while alive
+/discover                             — Random profile discovery
+/map                                  — Globe visualization of all records
+/permanence                           — Data preservation commitments and fund
+/about                                — Founding story and mission
+
+## Editorial Articles
+/learn/free-obituary-search           — How to find obituaries online for free
+/learn/how-to-preserve-family-history
+/learn/create-free-online-memorial
+/learn/digital-legacy
+/learn/how-to-write-a-memorial
+/learn/vietnam-veterans-arkansas
+/learn/living-memorial
+/learn/preserving-voice-recordings
+/learn/what-to-do-after-someone-dies-online
+/learn/cemetery-records-online
+
+## Mission
+Free forever. No premium tier. No paywall on any existing record.
+In the event of shutdown, all data is transferred to the Internet Archive.
+
+## Data Sources
+Legacy.com (all 50 states), Obituaries.com, Find A Grave, WikiTree,
+state vital records (CA, TX, FL, NY, PA priority), international English-speaking
+civil registries, funeral home aggregator feeds.

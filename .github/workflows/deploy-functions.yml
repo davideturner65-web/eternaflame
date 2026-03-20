@@ -26,6 +26,9 @@ jobs:
           supabase functions deploy scrape-billiongraves --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy scrape-wikitree --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy enrich-profiles --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy scrape-funeralhomes --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy scrape-state-vitals --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy scrape-international --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
 
       - name: Set secrets
         env:

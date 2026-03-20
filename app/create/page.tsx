@@ -4,9 +4,10 @@ import CreateProfileForm from "@/components/ui/CreateProfileForm";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Remember Someone",
+  title: "Create a Free Online Memorial | Eternaflame",
   description:
-    "Create a permanent, free memorial profile. Add their name, story, and the places that mattered. No cost, no ads — forever.",
+    "Add someone to the permanent record. Free online memorials for anyone — no fees, no expiration, no paywall. Their story lives here forever.",
+  alternates: { canonical: "https://eternaflame.org/create" },
 };
 
 export default function CreatePage() {
