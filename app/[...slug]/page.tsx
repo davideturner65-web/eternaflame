@@ -1,13 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
   Profile, ProfileLocation, ProfileMilitary, ProfileEducation,
   ProfileOccupation, ProfileAffiliation, FamilyConnection, Memory,
-  getDisplayName, getInitials, formatLifespan, getPrimaryLocation,
+  getDisplayName, getInitials, getPrimaryLocation,
 } from "@/types/profile";
-import { slugArrayToString, profileUrl } from "@/lib/slugs";
+import { slugArrayToString } from "@/lib/slugs";
 
 interface Props { params: { slug: string[] } }
 

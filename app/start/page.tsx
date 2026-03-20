@@ -1,6 +1,5 @@
 "use client";
 
-import type { Metadata } from "next";
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -57,7 +56,7 @@ export default function StartPage() {
 
       setProfileId(data.id);
       setStep(4);
-    } catch (e: unknown) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
