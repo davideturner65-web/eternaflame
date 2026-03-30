@@ -5,13 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Funeral home aggregator RSS feeds — covers deaths that never reach Legacy.com
+// Google News RSS — obituary searches targeting funeral-home-published notices.
+// These capture entries that don't appear in state-specific searches.
 const FUNERAL_HOME_FEEDS = [
-  { name: "TributeArchive", url: "https://www.tributearchive.com/rss" },
-  { name: "DignityMemorial", url: "https://www.dignitymemorial.com/obituaries/rss" },
-  { name: "Echovita", url: "https://www.echovita.com/rss/us/recent" },
-  { name: "ForeverMissed", url: "https://www.forevermissed.com/rss" },
-  { name: "LastingMemories", url: "https://www.lastingmemories.com/rss" },
+  { name: "Google News – funeral home", url: "https://news.google.com/rss/search?q=%22funeral+home%22+obituary&hl=en-US&gl=US&ceid=US:en" },
+  { name: "Google News – services", url: "https://news.google.com/rss/search?q=%22memorial+service%22+obituary&hl=en-US&gl=US&ceid=US:en" },
+  { name: "Google News – graveside", url: "https://news.google.com/rss/search?q=%22graveside+service%22+obituary&hl=en-US&gl=US&ceid=US:en" },
+  { name: "Google News – visitation", url: "https://news.google.com/rss/search?q=%22visitation%22+obituary&hl=en-US&gl=US&ceid=US:en" },
+  { name: "Google News – survivors", url: "https://news.google.com/rss/search?q=%22survived+by%22+obituary&hl=en-US&gl=US&ceid=US:en" },
 ];
 
 interface ParsedEntry {
