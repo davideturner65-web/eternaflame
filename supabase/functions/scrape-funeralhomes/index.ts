@@ -27,6 +27,16 @@ interface ParsedEntry {
   state: string | null;
 }
 
+function extractNameFromTitle(title: string): string {
+  return title
+    .replace(/obituary\s*[\|:–-]\s*/i, "")
+    .replace(/\s*[\|–-]\s*.+$/, "")
+    .replace(/\s+of\s+.+$/i, "")
+    .replace(/,\s*[A-Z]{2}\s*$/, "")
+    .replace(/\s+obituary\s*$/i, "")
+    .trim();
+}
+
 function parseNameParts(full: string): { first_name: string; last_name: string } {
   const parts = full.trim().split(/\s+/);
   if (parts.length === 1) return { first_name: parts[0], last_name: "—" };
@@ -72,11 +82,13 @@ function parseRSSEntries(xml: string, sourceName: string): ParsedEntry[] {
 
     if (!cleanTitle || cleanTitle.length < 3) continue;
 
-    // Strip age suffix like "John Smith, 84"
-    const namePart = cleanTitle.split(",")[0].trim();
-    if (!namePart) continue;
+    // Extract clean name (strips source after pipe/dash, location, age suffix)
+    const nameRaw = extractNameFromTitle(cleanTitle.split(",")[0].trim());
+    if (!nameRaw) continue;
 
-    const { first_name, last_name } = parseNameParts(namePart);
+    const { first_name, last_name } = parseNameParts(nameRaw);
+    // Skip entries with no real last name or a numeric last name (e.g. age "84")
+    if (!first_name || !last_name || last_name === "—" || /^\d/.test(last_name)) continue;
     const loc = extractLocation(cleanDesc + " " + cleanTitle);
     const yearMatch = cleanDesc.match(/\b(19[0-9]{2}|20[0-2][0-9])\b/g);
 

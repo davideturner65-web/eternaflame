@@ -14,11 +14,57 @@ interface Props { params: { slug: string[] } }
 async function getProfileBySlug(slugStr: string) {
   try {
     const supabase = createClient();
-    const [
-      { data: profile },
-    ] = await Promise.all([
-      supabase.from("profiles").select("*").eq("slug", slugStr).eq("privacy", "public").single(),
-    ]);
+
+    // 1. Try exact stored-slug match
+    let { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("slug", slugStr)
+      .eq("privacy", "public")
+      .maybeSingle();
+
+    // 2. Fallback: parse the slug URL and match by name + year.
+    //    New scraper-inserted profiles have no stored slug yet.
+    if (!profile) {
+      const segments = slugStr.split("/");
+      const nameParts = segments[0].split("-");
+      if (nameParts.length >= 2) {
+        const lastNameSlug = nameParts[nameParts.length - 1];
+        const firstNameSlug = nameParts.slice(0, -1).join(" ");
+
+        // Only attempt if name parts look alphabetic (skip numeric/junk slugs)
+        if (/^[a-z]/i.test(firstNameSlug) && /^[a-z]/i.test(lastNameSlug)) {
+          let query = supabase
+            .from("profiles")
+            .select("*")
+            .eq("privacy", "public")
+            .ilike("first_name", firstNameSlug)
+            .ilike("last_name", lastNameSlug);
+
+          // Disambiguate by year segment when present (e.g. "1945-2023")
+          const yearSeg = segments.find((s) => /^\d{4}/.test(s));
+          if (yearSeg) {
+            const [byStr, dyStr] = yearSeg.split("-");
+            const by = byStr ? parseInt(byStr) : null;
+            const dy = dyStr ? parseInt(dyStr) : null;
+            if (by) query = query.eq("birth_year", by) as typeof query;
+            if (dy && dy !== by) query = query.eq("death_year", dy) as typeof query;
+          }
+
+          const { data: matches } = await query.limit(1);
+          if (matches?.[0]) {
+            profile = matches[0];
+            // Cache the slug so this lookup is instant next time
+            await supabase
+              .from("profiles")
+              .update({ slug: slugStr })
+              .eq("id", profile.id)
+              .is("slug", null);
+          }
+        }
+      }
+    }
+
     if (!profile) return null;
 
     const [

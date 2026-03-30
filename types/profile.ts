@@ -293,7 +293,11 @@ export function getDisplayName(p: Pick<Profile, 'first_name' | 'last_name' | 'ni
 }
 
 export function getInitials(p: Pick<Profile, 'first_name' | 'last_name'>): string {
-  return `${p.first_name[0]}${p.last_name[0]}`.toUpperCase()
+  const f = p.first_name?.match(/[A-Za-z]/)?.[0] ?? '?';
+  const l = p.last_name && p.last_name !== '—'
+    ? (p.last_name.match(/[A-Za-z]/)?.[0] ?? '')
+    : '';
+  return (f + l).toUpperCase();
 }
 
 export function formatYear(year?: number | null): string {
