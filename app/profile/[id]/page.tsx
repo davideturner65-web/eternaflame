@@ -35,5 +35,5 @@ export default async function ProfileRedirectPage({ params }: Props) {
     slugPath = generateProfileSlug(profile as unknown as Profile, locs?.[0] as ProfileLocation | null);
   }
 
-  redirect(`/${slugPath}`, 301 as never);
+  redirect(`/${slugPath}`);
 }
