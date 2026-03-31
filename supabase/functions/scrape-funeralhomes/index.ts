@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { extractSourceDomain, isJunkTitle, isValidPersonName } from "../_shared/helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,7 @@ interface ParsedEntry {
   obituary_text: string | null;
   obituary_url: string;
   obituary_source: string;
+  obituary_source_domain: string | null;
   birth_year: number | null;
   death_year: number | null;
   city: string | null;
@@ -32,13 +34,19 @@ function extractNameFromTitle(title: string): string {
     .replace(/obituary\s*[\|:–-]\s*/i, "")
     .replace(/\s*[\|–-]\s*.+$/, "")
     .replace(/\s+of\s+.+$/i, "")
+    .replace(/\s+[A-Z][a-zA-Z]+,\s*[A-Z]{2}\s*$/, "") // strip "CityName, ST" appended to name
     .replace(/,\s*[A-Z]{2}\s*$/, "")
     .replace(/\s+obituary\s*$/i, "")
     .trim();
 }
 
 function parseNameParts(full: string): { first_name: string; last_name: string } {
-  const parts = full.trim().split(/\s+/);
+  const cleaned = full
+    .replace(/\s*\([^)]*\d+[^)]*\)/g, '')
+    .replace(/\s+\d{4}(-\d{4})?$/, '')
+    .replace(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s*\d{4}/gi, '')
+    .trim();
+  const parts = cleaned.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 1) return { first_name: parts[0], last_name: "—" };
   const last_name = parts.pop()!;
   return { first_name: parts.join(" "), last_name };
@@ -81,14 +89,14 @@ function parseRSSEntries(xml: string, sourceName: string): ParsedEntry[] {
     const cleanDesc = cleanText(desc);
 
     if (!cleanTitle || cleanTitle.length < 3) continue;
+    if (isJunkTitle(cleanTitle)) continue;
 
     // Extract clean name (strips source after pipe/dash, location, age suffix)
     const nameRaw = extractNameFromTitle(cleanTitle.split(",")[0].trim());
     if (!nameRaw) continue;
 
     const { first_name, last_name } = parseNameParts(nameRaw);
-    // Skip entries with no real last name or a numeric last name (e.g. age "84")
-    if (!first_name || !last_name || last_name === "—" || /^\d/.test(last_name)) continue;
+    if (!isValidPersonName(first_name, last_name)) continue;
     const loc = extractLocation(cleanDesc + " " + cleanTitle);
     const yearMatch = cleanDesc.match(/\b(19[0-9]{2}|20[0-2][0-9])\b/g);
 
@@ -108,6 +116,7 @@ function parseRSSEntries(xml: string, sourceName: string): ParsedEntry[] {
       obituary_text: cleanDesc.slice(0, 5000) || null,
       obituary_url: link.trim(),
       obituary_source: sourceName,
+      obituary_source_domain: extractSourceDomain(item),
       birth_year,
       death_year,
       city: loc.city,
@@ -161,6 +170,7 @@ Deno.serve(async (req) => {
             obituary_text: entry.obituary_text,
             obituary_url: entry.obituary_url,
             obituary_source: entry.obituary_source,
+            obituary_source_domain: entry.obituary_source_domain,
             auto_ingested: true,
             ingestion_source: "legacy", // reuse legacy enum value for funeral homes
             needs_review: true,

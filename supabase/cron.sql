@@ -71,6 +71,18 @@ select cron.schedule('scrape-wikitree-daily', '0 10 * * *', $$
   );
 $$);
 
+-- Obituary Text Fetch — every 30 minutes (fetches full page text for profiles that have a URL but no text yet)
+select cron.schedule('fetch-obituary-text-30min', '*/30 * * * *', $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'supabase_url') || '/functions/v1/fetch-obituary-text',
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key'),
+      'Content-Type', 'application/json'
+    ),
+    body := '{}'::jsonb
+  );
+$$);
+
 -- AI Enrichment — every hour (processes 10 profiles per run)
 select cron.schedule('enrich-profiles-hourly', '0 * * * *', $$
   select net.http_post(

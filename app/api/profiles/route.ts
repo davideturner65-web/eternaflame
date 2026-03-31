@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 const supabase = () =>
@@ -35,6 +36,12 @@ export async function GET(request: Request) {
 
 // POST /api/profiles — create a new profile with child records
 export async function POST(request: Request) {
+  const authClient = createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
   const body = await request.json();
   const db = supabase();
 

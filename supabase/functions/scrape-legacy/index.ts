@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { parseNameParts, parseDateSafe, extractYearFromDate, corsHeaders } from '../_shared/helpers.ts'
+import { parseNameParts, parseDateSafe, extractYearFromDate, extractSourceDomain, isJunkTitle, isValidPersonName, corsHeaders } from '../_shared/helpers.ts'
 
 // Google News RSS — obituary searches by state grouping.
 // Each run processes one batch of states to stay within Supabase Edge Function timeouts.
@@ -26,6 +26,7 @@ function extractNameFromTitle(title: string): string {
     .replace(/obituary\s*[\|:–-]\s*/i, '')
     .replace(/\s*[\|–-]\s*.+$/, '')           // strip source/location after dash
     .replace(/\s+of\s+.+$/i, '')              // strip "of City, State"
+    .replace(/\s+[A-Z][a-zA-Z]+,\s*[A-Z]{2}\s*$/, '') // strip "CityName, ST" appended to name
     .replace(/,\s*[A-Z]{2}\s*$/,'')           // strip trailing ", ST"
     .replace(/\s+obituary\s*$/i, '')          // strip trailing "Obituary"
     .trim()
@@ -96,12 +97,10 @@ serve(async (req) => {
             ?? item.match(/<link\/>(.*?)<\/link>/)?.[1] ?? ''
           const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] ?? ''
           const source = item.match(/<source[^>]*>(.*?)<\/source>/)?.[1] ?? 'Google News'
+          const sourceDomain = extractSourceDomain(item)
 
           if (!rawTitle || !link) { results.skipped++; continue }
-          // Skip if not clearly an obituary entry
-          if (!/obituar/i.test(rawTitle) && !/\bof\s+[A-Z]/i.test(rawTitle)) {
-            results.skipped++; continue
-          }
+          if (isJunkTitle(rawTitle)) { results.skipped++; continue }
 
           const { data: existing } = await supabase.from('profiles')
             .select('id').eq('obituary_url', link).maybeSingle()
@@ -109,7 +108,7 @@ serve(async (req) => {
 
           const nameRaw = extractNameFromTitle(rawTitle)
           const { firstName, lastName, middleName } = parseNameParts(nameRaw)
-          if (!firstName || !lastName || lastName === '—') { results.skipped++; continue }
+          if (!isValidPersonName(firstName, lastName)) { results.skipped++; continue }
 
           const { city, stateAbbr } = extractLocationFromTitle(rawTitle)
           const deathDate = parseDateSafe(pubDate)
@@ -122,6 +121,7 @@ serve(async (req) => {
             death_date_approximate: true,
             death_year: extractYearFromDate(deathDate),
             obituary_source: source,
+            obituary_source_domain: sourceDomain,
             obituary_url: link,
             auto_ingested: true,
             ingestion_source: 'legacy',

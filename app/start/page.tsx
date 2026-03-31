@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 // Note: metadata export not used in client components — set in a separate
 // server component wrapper or define in layout. Keeping here for reference.
@@ -26,35 +25,25 @@ export default function StartPage() {
     setLoading(true);
     setError(null);
     try {
-      const supabase = createClient();
-      const { data, error: dbErr } = await supabase
-        .from("profiles")
-        .insert({
+      const res = await fetch("/api/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           first_name: firstName.trim(),
           last_name: lastName.trim() || "—",
-          birth_year: birthYear ? parseInt(birthYear) : null,
-          personality_summary: tagline.trim() || null,
+          birth_date: birthYear ? `${birthYear}-01-01` : undefined,
+          personality: tagline.trim() || undefined,
           privacy: "public",
-          ingestion_source: "manual",
-        })
-        .select("id")
-        .single();
+          residence: city.trim()
+            ? `${city.trim()}${state.trim() ? `, ${state.trim()}` : ""}`
+            : undefined,
+        }),
+      });
 
-      if (dbErr) throw dbErr;
-      if (!data) throw new Error("No profile returned");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Insert failed");
 
-      // Add location if provided
-      if (city.trim() || state.trim()) {
-        await supabase.from("profile_locations").insert({
-          profile_id: data.id,
-          location_type: "lived",
-          city: city.trim() || null,
-          state_province: state.trim() || null,
-          is_current: true,
-        });
-      }
-
-      setProfileId(data.id);
+      setProfileId(data.profile.id);
       setStep(4);
     } catch {
       setError("Something went wrong. Please try again.");

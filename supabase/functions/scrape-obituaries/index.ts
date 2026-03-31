@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { parseNameParts, parseDateSafe, extractYearFromDate, corsHeaders } from '../_shared/helpers.ts'
+import { parseNameParts, parseDateSafe, extractYearFromDate, extractSourceDomain, isJunkTitle, isValidPersonName, corsHeaders } from '../_shared/helpers.ts'
 
 // Google News RSS — broader obituary queries to catch entries not caught by state search
 const FEEDS = [
@@ -13,6 +13,7 @@ function extractNameFromTitle(title: string): string {
     .replace(/obituary\s*[\|:–-]\s*/i, '')
     .replace(/\s*[\|–-]\s*.+$/, '')
     .replace(/\s+of\s+.+$/i, '')
+    .replace(/\s+[A-Z][a-zA-Z]+,\s*[A-Z]{2}\s*$/, '') // strip "CityName, ST" appended to name
     .replace(/,\s*[A-Z]{2}\s*$/, '')
     .replace(/\s+obituary\s*$/i, '')
     .trim()
@@ -60,8 +61,10 @@ serve(async (req) => {
           const link = item.match(/<link>(.*?)<\/link>/)?.[1] ?? ''
           const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] ?? ''
           const source = item.match(/<source[^>]*>(.*?)<\/source>/)?.[1] ?? 'Google News'
+          const sourceDomain = extractSourceDomain(item)
 
           if (!rawTitle || !link) { results.skipped++; continue }
+          if (isJunkTitle(rawTitle)) { results.skipped++; continue }
 
           const { data: existing } = await supabase.from('profiles')
             .select('id').eq('obituary_url', link).maybeSingle()
@@ -69,7 +72,7 @@ serve(async (req) => {
 
           const nameRaw = extractNameFromTitle(rawTitle)
           const { firstName, lastName, middleName } = parseNameParts(nameRaw)
-          if (!firstName || !lastName || lastName === '—') { results.skipped++; continue }
+          if (!isValidPersonName(firstName, lastName)) { results.skipped++; continue }
 
           const { city, stateAbbr } = extractLocationFromTitle(rawTitle)
           const deathDate = parseDateSafe(pubDate)
@@ -82,6 +85,7 @@ serve(async (req) => {
             death_date_approximate: true,
             death_year: extractYearFromDate(deathDate),
             obituary_source: source,
+            obituary_source_domain: sourceDomain,
             obituary_url: link,
             auto_ingested: true,
             ingestion_source: 'obituaries_com',
