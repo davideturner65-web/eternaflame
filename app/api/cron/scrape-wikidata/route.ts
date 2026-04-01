@@ -82,7 +82,7 @@ async function getPageData(titles: string[]): Promise<Record<string, {
   }>[]) {
     if (!page.title) continue;
     const extract = page.extract ?? "";
-    const wikidata_id = page.pageprops?.wikibase_item ?? undefined;
+    const wikidata_id = (page.pageprops as { wikibase_item?: string } | undefined)?.wikibase_item ?? undefined;
 
     // Parse birth year from categories like "Category:1945 births"
     const birthCat = page.categories?.find((c) => c.title.match(/\d{4} births/));
