@@ -59,6 +59,18 @@ select cron.schedule('scrape-billiongraves-daily', '0 9 * * *', $$
   );
 $$);
 
+-- Wikidata SPARQL — 9am UTC daily (rotates through death-year windows)
+select cron.schedule('scrape-wikidata-daily', '0 9 * * *', $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'supabase_url') || '/functions/v1/scrape-wikidata',
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key'),
+      'Content-Type', 'application/json'
+    ),
+    body := '{}'::jsonb
+  );
+$$);
+
 -- WikiTree — 10am UTC daily
 select cron.schedule('scrape-wikitree-daily', '0 10 * * *', $$
   select net.http_post(
