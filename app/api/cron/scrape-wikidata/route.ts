@@ -75,14 +75,12 @@ async function getPageData(titles: string[]): Promise<Record<string, {
   if (!res.ok) return {};
   const data = await res.json();
 
-  const result: Record<string, { extract?: string; birth?: string; death?: string; wikidata_id?: string }> = {};
-  for (const page of Object.values(data.query?.pages ?? {}) as Record<string, {
-    title?: string; extract?: string; pageprops?: { wikibase_item?: string };
-    categories?: { title: string }[];
-  }>[]) {
+  const result: Record<string, { extract?: string; birth?: string; death?: string; wikidata_id?: string | undefined }> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const page of Object.values(data.query?.pages ?? {}) as any[]) {
     if (!page.title) continue;
     const extract = page.extract ?? "";
-    const wikidata_id = (page.pageprops as { wikibase_item?: string } | undefined)?.wikibase_item ?? undefined;
+    const wikidata_id = page.pageprops?.wikibase_item ?? undefined;
 
     // Parse birth year from categories like "Category:1945 births"
     const birthCat = page.categories?.find((c) => c.title.match(/\d{4} births/));
